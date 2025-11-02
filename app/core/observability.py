@@ -1,19 +1,18 @@
-from fastapi import FastAPI
+from typing import Optional
 from opentelemetry import trace
+from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
+def configure_tracing(app, settings) -> Optional[TracerProvider]:
+    endpoint = settings.OTEL_EXPORTER_OTLP_ENDPOINT
+    if not endpoint:
+        return None
 
-from .config import Settings
-
-
-def configure_tracing(app: FastAPI, settings: Settings) -> None:
-    if not settings.OTEL_EXPORTER_OTLP_ENDPOINT:
-        return
-    resource = Resource(attributes={SERVICE_NAME: "threat-intel-api"})
+    resource = Resource.create({"service.name": settings.APP_NAME, "deployment.environment": settings.APP_ENV})
     provider = TracerProvider(resource=resource)
-    span_exporter = OTLPSpanExporter(endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT, insecure=True)
-    provider.add_span_processor(BatchSpanProcessor(span_exporter))
+    exporter = OTLPSpanExporter(endpoint=endpoint, insecure=True)  # Jaeger all-in-one(4317)일 때 보통 insecure=True
+    provider.add_span_processor(BatchSpanProcessor(exporter))
     trace.set_tracer_provider(provider)
+    return provider

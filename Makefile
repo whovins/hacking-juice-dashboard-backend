@@ -83,5 +83,18 @@ test:
 	pytest -q
 
 .PHONY: dev
+
+env-local:
+	@set -a; . ops/env/.env.local; set +a; env | grep -E '^(APP_ENV|PG_DSN|REDIS_URL|OS_URL|API_|JWT_|CORS_|OTEL_)'
+
+migrate:
+	@set -a; . ops/env/.env.local; set +a; alembic revision --autogenerate -m "$(m)"
+
+upgrade:
+	@set -a; . ops/env/.env.local; set +a; alembic upgrade head
+
+seed-admin:
+	@set -a; . ops/env/.env.local; set +a; python -m app.apps.users.seed_admin
+
 dev:
-	ops/dev.sh
+	@ops/dev.sh
