@@ -1,0 +1,111 @@
+x-env: &common_env
+  APP_ENV: dev
+  API_HOST: 0.0.0.0
+  API_PORT: "8000"
+  PG_DSN: postgresql+asyncpg://app:pass@pg:5432/app
+  REDIS_URL: redis://redis:6379/0
+  OS_URL: http://opensearch:9200
+  JWT_PRIVATE_KEY: dev-private
+  JWT_PUBLIC_KEY: dev-public
+  JWT_TTL_MIN: "30"
+  JWT_REFRESH_TTL_MIN: "10080"
+  CORS_ORIGINS: http://localhost:5173
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+  RATE_LIMIT_DEFAULT: 100/min
+  ILM_POLICY_DAYS_HOT: "7"
+  ILM_POLICY_DAYS_WARM: "30"
+  ILM_POLICY_DAYS_DELETE: "180"
+  DEDUP_TTL_DAYS: "14"
+  SUPPRESS_DEFAULT_HOURS: "24"
+  PG_HOST: pg
+  PG_PORT: "5432"
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  OS_HOST: opensearch
+  OS_PORT: "9200"
+
+services:
+  pg:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: pass
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD","redis-cli","ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  opensearch:
+    image: opensearchproject/opensearch:2.15.0
+    # platform: linux/arm64/v8
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile:  { soft: 65536, hard: 65536 }
+    volumes:
+      - osdata:/usr/share/opensearch/data
+    ports: ["9200:9200","9600:9600"]
+    healthcheck:
+      test: ["CMD-SHELL","curl -s http://localhost:9200 >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  dashboards:
+    image: opensearchproject/opensearch-dashboards:2.15.0
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    ports: ["5601:5601"]
+    depends_on: [opensearch]
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    ports: ["16686:16686","4317:4317"]
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment: *common_env
+    volumes: [".:/app"]
+    ports: ["8000:8000"]
+    depends_on:
+      pg: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      opensearch: { condition: service_healthy }
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment: *common_env
+    command: ["bash","ops/entrypoint.worker.sh"]
+    volumes: [".:/app"]
+    depends_on:
+      pg: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      opensearch: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  osdata:
