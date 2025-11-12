@@ -9,5 +9,10 @@ class MeOut(BaseModel):
     email: EmailStr
     role: str
 
+class TokenPairOut(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
 class RefreshIn(BaseModel):
     refresh_token: str

@@ -1,4 +1,3 @@
-# app/core/rate_limit.py
 from typing import Callable
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request

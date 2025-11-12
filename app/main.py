@@ -38,15 +38,18 @@ def create_app() -> FastAPI:
     # routers
     app.include_router(health_router)
 
-    @app.on_event("startup")
-    async def on_startup() -> None:
-        # TODO: readiness 초기화 등
-        pass
+    # @app.on_event("startup")
+    # async def on_startup() -> None:
+    #     # TODO: readiness 초기화 등
+    #     pass
 
-    @app.on_event("shutdown")
-    async def on_shutdown() -> None:
-        pass
-
+    # @app.on_event("shutdown")
+    # async def on_shutdown() -> None:
+    #     pass
+    @app.get("healthz")
+    async def healthz():
+        return {"ok":  True}
+    
     app.include_router(auth_router)
     app.include_router(settings_router)
 

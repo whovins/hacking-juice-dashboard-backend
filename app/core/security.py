@@ -4,6 +4,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.config import settings
 
+from passlib.hash import bcrypt
+
 bearer = HTTPBearer(auto_error=True)
 
 class TokenPair(BaseModel):
@@ -28,6 +30,12 @@ def verify(token: str) -> dict:
         return jwt.decode(token, settings.JWT_PRIVATE_KEY, algorithms=["HS256"])
     except jwt.PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid_token")
+
+def hash_password(plain: str) -> str:
+    return bcrypt.hash(plain)
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return bcrypt.verify(plain, hashed)
 
 def current_user_claims(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> dict:
     claims = verify(creds.credentials)
