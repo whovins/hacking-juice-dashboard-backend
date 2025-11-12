@@ -13,10 +13,10 @@ async def get_settings(claims=Depends(current_user_claims), s: AsyncSession = De
     row = await repo.get_by_user(claims["sub"])
     if not row:
         row = await repo.upsert(claims["sub"])
-    return {"ui_theme": row.ui_theme, "notify_email": row.notify_email}
+    return {"user_id": row.user_id, "ui_theme": row.ui_theme, "notify_email": row.notify_email}
 
 @router.put("", response_model=SettingOut)
 async def update_settings(body: SettingUpdate, claims=Depends(current_user_claims), s: AsyncSession = Depends(get_session)):
     repo = SettingsRepo(s)
     row = await repo.upsert(claims["sub"], ui_theme=body.ui_theme, notify_email=body.notify_email)
-    return {"ui_theme": row.ui_theme, "notify_email": row.notify_email}
+    return {"user_id": row.user_id, "ui_theme": row.ui_theme, "notify_email": row.notify_email}

@@ -10,6 +10,7 @@ from .core.rate_limit import limiter, RateLimitMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 from app.apps.auth.api import router as auth_router
+from app.apps.users.api import router as users_router
 from app.apps.settings.api import router as settings_router
 from app.core.observability import configure_tracing
 
@@ -51,6 +52,7 @@ def create_app() -> FastAPI:
         return {"ok":  True}
     
     app.include_router(auth_router)
+    app.include_router(users_router)
     app.include_router(settings_router)
 
     return app

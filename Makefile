@@ -96,5 +96,8 @@ upgrade:
 seed-admin:
 	@set -a; . ops/env/.env.local; set +a; python -m app.apps.users.seed_admin
 
+seed-viewer:
+	@set -a; . ops/env/.env.local; set +a; python -m app.apps.users.seed_viewer
+
 dev:
 	@ops/dev.sh

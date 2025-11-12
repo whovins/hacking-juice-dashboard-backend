@@ -14,7 +14,7 @@ class AuthService:
         self.users = UsersRepo(session)
     async def login(self, *, email: str, password: str):
         email = email.strip().lower()
-        user = await self.users.find_by_email(email)
+        user = await self.users.get_by_email(email)
         if not user or not verify_password(password, user.password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
